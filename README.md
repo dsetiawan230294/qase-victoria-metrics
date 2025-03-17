@@ -13,12 +13,12 @@ Before running the tests, set up the following environment variables:
 
 | Variable Name          | Description                                      | Required |
 |------------------------|--------------------------------------------------|----------|
-| `VICTORIA_URL`        | URL of the Victoria Metrics instance             | No       |
+| `VICTORIA_URL`        | URL of the Victoria Metrics instance             | Yes       |
 | `QASE_TESTOPS_RUN_ID` | Qase TestOps Run ID                              | Yes      |
 | `QASE_TESTOPS_PROJECT`| Qase project identifier                          | Yes      |
-| `PLATFORM`            | Platform identifier (e.g., OS, environment)      | No       |
+| `PLATFORM`            | Platform identifier (e.g., OS, environment)      | Yes       |
 | `QASE_TESTOPS_API_TOKEN` | API token for Qase integration               | Yes      |
-| `EXCLUDED_RUN_ID`     | Run ID to exclude from metrics                   | No       |
+| `EXCLUDED_RUN_ID`     | Run ID to exclude from metrics                   | Yes       |
 
 ## Usage
 
@@ -58,7 +58,7 @@ pip install qase-victoria-metrics
 
 3. Run your tests:
 ```
-pytest --qase
+pytest /path/to/file
 ```
 
 ## How It Works
