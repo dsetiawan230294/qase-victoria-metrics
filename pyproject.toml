@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qase-victoria-metrics"
+version = "0.1.0"
+description = "A Qase-Pytest plugin to extract test results and push metrics to Victoria Metrics"
+readme = "README.md"
+authors = [
+    { name = "Didit Setiawan", email = "didit@pintu.co.id" }
+]
+license = { text = "MIT" }
+keywords = ["pytest", "qase", "metrics", "victoria-metrics", "pytest-plugin"]
+classifiers = [
+    "Framework :: Pytest",
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+dependencies = [
+    "pytest>=8.3.5",
+    "qase-pytest>=6.2.0",
+    "allure-pytest>=2.13.5"
+]
+requires-python = ">=3.10"
+
+[project.entry-points.pytest11]
+pytest_metrics = "pytest_metrics.metrics"
+
+[tool.setuptools]
+packages = ["pytest_metrics"]
+
+[tool.setuptools.package-dir]
+"" = "src"
