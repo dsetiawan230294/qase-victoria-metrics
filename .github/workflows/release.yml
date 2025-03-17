@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write  # Required for GitHub Trusted Publisher
+      id-token: write
 
     steps:
       - name: Checkout code
