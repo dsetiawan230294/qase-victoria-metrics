@@ -1,5 +1,0 @@
-allure-pytest
-qase-pytest
-qase-python-commons
-qase-api-client
-qase-api-v2-client
