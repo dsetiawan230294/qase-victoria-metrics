@@ -23,12 +23,12 @@ Before running the tests, set up the following environment variables:
 
 ## Usage
 On a testcase level, import this decators
-```
+```python
 from pytest_metrics.decorators import qase_id, qase_title, qase_suite, qase_tags
 ```
 
 To apply the decorators , follow this example :
-```
+```python
 @qase_id(5189)
 @qase_title("User success login, when input email, password, and gauth valid")
 @qase_suite("PRO WEB.AUTH.LOGIN")
@@ -39,7 +39,7 @@ def test_1():
 ```
 
 To exclude test case from being pushed to Excluded Run Id, follow this example :
-```
+```python
 @qase_ignore()
 ```
 
