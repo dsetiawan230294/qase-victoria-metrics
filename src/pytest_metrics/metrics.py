@@ -20,6 +20,7 @@ RUN_ID: Optional[str] = os.environ.get("QASE_TESTOPS_RUN_ID")
 PROJECT: Optional[str] = os.environ.get("QASE_TESTOPS_PROJECT")
 PLATFORM: Optional[str] = os.environ.get("PLATFORM")
 QASE_TOKEN: Optional[str] = os.environ.get("QASE_TESTOPS_API_TOKEN")
+PUSH_TO_VICTORIA: Optional[str] = os.environ.get("PUSH_TO_VICTORIA")
 
 
 class MetricsReport:
@@ -74,8 +75,6 @@ class MetricsReport:
             case_title = (
                 [case_title] if case_title is not None else ["UNKNOWN TESTCASE TITLE"]
             )
-        if not tags:
-            tags = "UNKNOWN TAGS"
 
         duration = int(report.duration * 1000)
         error_message = None
@@ -131,6 +130,25 @@ class MetricsReport:
                         self.results.extend(worker_data)
                 os.remove(file)  # Clean up temp file
 
+    def sanitize_result(self) -> None:
+        """
+        Sanitizes `self.results` to keep only the latest test result per `case_id`.
+
+        If a `case_id` has multiple results with different statuses, the latest "passed"
+        result is prioritized over failed ones.
+
+        Returns:
+            None: Updates `self.results` in place.
+        """
+        latest_result: Dict[int, Dict[str, object]] = {}
+
+        for result in self.results:
+            case_id = result["case_id"]
+            if case_id not in latest_result or result["status"] == "passed":
+                latest_result[case_id] = result
+
+        self.results = list(latest_result.values())
+
     def send_to_victoria_metrics(self) -> Optional[requests.Response]:
         """
         Sends collected test results to VictoriaMetrics in Prometheus format.
@@ -143,8 +161,11 @@ class MetricsReport:
             print("No test results to send.")
             return None
 
+        self.sanitize_result()
+
         metrics: List[str] = []
         timestamp = int(time.time())
+        push_date = int(time.time() * 1000)
 
         def format_labels(result: Dict[str, Any]) -> str:
             """
@@ -159,7 +180,7 @@ class MetricsReport:
             return (
                 f'run_id="{result["run_id"]}", '
                 f'suite_title="{result["suite_title"]}", '
-                f'status="{result["status"]}", push_date="{int(time.time() * 1000)}", '
+                f'status="{result["status"]}", push_date="{push_date}", '
                 f'title="{result["title"]}", tags="{result["tags"]}", '
                 f'platform="{result["platform"]}", case_id="{result["case_id"]}"'
             )
@@ -180,18 +201,21 @@ class MetricsReport:
 
         payload = "\n".join(metrics)
 
-        try:
-            response = payload
-            response = requests.post(
-                VICTORIA_URL,
-                data=payload,
-                headers={"Content-Type": "text/plain"},
-                timeout=300,
-            )
-            print("Response:", response.status_code, response.text)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            print(f"Error sending data to VictoriaMetrics: {e}")
-            return None
+        if PUSH_TO_VICTORIA == "true":
+            try:
+                response = payload
+                response = requests.post(
+                    VICTORIA_URL,
+                    data=payload,
+                    headers={"Content-Type": "text/plain"},
+                    timeout=300,
+                )
+                print("Response:", response.status_code, response.text)
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                print(f"Error sending data to VictoriaMetrics: {e}")
+                return None
 
-        return response
+            return response
+        else:
+            print("Sending Metrics to Victoria is Disabled")
