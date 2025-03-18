@@ -19,8 +19,29 @@ Before running the tests, set up the following environment variables:
 | `PLATFORM`            | Platform identifier (e.g., OS, environment)      | Yes       |
 | `QASE_TESTOPS_API_TOKEN` | API token for Qase integration               | Yes      |
 | `EXCLUDED_RUN_ID`     | Run ID to exclude from metrics                   | Yes       |
+| `PUSH_TO_VICTORIA`     | Option to Push or Not Push the Result           | Yes       |
 
 ## Usage
+On a testcase level, import this decators
+```
+from pytest_metrics.decorators import qase_id, qase_title, qase_suite, qase_tags
+```
+
+To apply the decorators , follow this example :
+```
+@qase_id(5189)
+@qase_title("User success login, when input email, password, and gauth valid")
+@qase_suite("PRO WEB.AUTH.LOGIN")
+@qase_tags("ProSpot")
+def test_1():
+    var = False
+    assert_that(var).is_true()
+```
+
+To exclude test case from being pushed to Excluded Run Id, follow this example :
+```
+@qase_ignore()
+```
 
 Modify your `conftest.py` file to integrate with the metrics reporting system:
 
