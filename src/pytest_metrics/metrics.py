@@ -84,7 +84,7 @@ class MetricsReport:
             error_message = report.longreprtext.split("\n")[-1]
             stacktrace = report.longreprtext
 
-        max_length = max(len(suite_title), len(case_title))
+        max_length = max(len(case_id), len(case_title))
 
         for i in range(max_length):
             self.results.append(
