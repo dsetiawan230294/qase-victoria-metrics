@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="qase-victoria-metrics",
-    version="1.0.5beta",
+    version="1.0.6beta",
     description="A Qase-Pytest plugin to extract test results and push metrics to Victoria Metrics",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -25,7 +25,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    entry_points={"pytest11": ["pytest_metrics = pytest_metrics.metrics"]},
+    entry_points={"pytest11": ["pytest_metrics = pytest_metrics.pytest_plugin"]},
     python_requires=">=3.10",
     keywords=["pytest", "qase", "metrics", "victoria-metrics", "pytest-plugin"],
     license="MIT",
