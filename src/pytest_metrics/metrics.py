@@ -203,7 +203,6 @@ class MetricsReport:
 
         if PUSH_TO_VICTORIA == "true":
             try:
-                response = payload
                 response = requests.post(
                     VICTORIA_URL,
                     data=payload,
@@ -216,6 +215,7 @@ class MetricsReport:
                 print(f"Error sending data to VictoriaMetrics: {e}")
                 return None
 
+            print("\nData pushed successfully to Victoria Metrics\n")
             return response
         else:
             print("Sending Metrics to Victoria is Disabled")
