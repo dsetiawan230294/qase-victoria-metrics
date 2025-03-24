@@ -21,6 +21,9 @@ PROJECT: Optional[str] = os.environ.get("QASE_TESTOPS_PROJECT")
 PLATFORM: Optional[str] = os.environ.get("PLATFORM")
 QASE_TOKEN: Optional[str] = os.environ.get("QASE_TESTOPS_API_TOKEN")
 PUSH_TO_VICTORIA: Optional[str] = os.environ.get("PUSH_TO_VICTORIA")
+MULTIPLE_REPORT: Optional[str] = os.environ.get("MULTIPLE_REPORT")
+DELETE_TEMP_FILE: Optional[str] = os.environ.get("DELETE_TEMP_FILE")
+PILLAR: Optional[str] = os.environ.get("PILLAR")
 
 
 class MetricsReport:
@@ -113,8 +116,11 @@ class MetricsReport:
         """
         if not self.results:
             return  # Avoid writing empty files
-
-        filename = f"pytest_worker_{worker_id}.json"
+        filename = (
+            f"{PILLAR}_pytest_worker_{worker_id}.json"
+            if MULTIPLE_REPORT in [None, "true"]
+            else f"pytest_worker_{worker_id}.json"
+        )
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(self.results, f)
 
@@ -123,12 +129,13 @@ class MetricsReport:
         Load results from temporary worker files and merge them into `results`.
         """
         for file in os.listdir():
-            if file.startswith("pytest_worker_") and file.endswith(".json"):
+            if "pytest_worker_" in file and file.endswith(".json"):
                 with open(file, "r", encoding="utf-8") as f:
                     worker_data = json.load(f)
                     if worker_data:
                         self.results.extend(worker_data)
-                os.remove(file)  # Clean up temp file
+                if DELETE_TEMP_FILE in [None, "true"]:
+                    os.remove(file)
 
     def sanitize_result(self) -> None:
         """

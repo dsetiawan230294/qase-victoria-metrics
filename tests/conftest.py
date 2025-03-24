@@ -15,7 +15,7 @@ def pytest_runtest_makereport(item, call):
         item.test_result = rep
 
 
-@pytest.hookimpl(trylast=True, hookwrapper=True)
+@pytest.hookimpl()
 def pytest_sessionfinish(session, exitstatus):
     worker_id = os.environ.get("PYTEST_XDIST_WORKER")
 
