@@ -107,6 +107,11 @@ class MetricsReport:
                 }
             )
 
+        worker_id = os.getenv("PYTEST_XDIST_WORKER")
+        if not worker_id:
+            with open(f"pytest_worker_{PILLAR}.json", "w", encoding="utf-8") as f:
+                json.dump(self.results, f)
+
     def save_to_temp_file(self, worker_id: str) -> None:
         """
         Save worker results to a temporary JSON file.
