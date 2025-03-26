@@ -107,13 +107,6 @@ class MetricsReport:
                 }
             )
 
-        worker_id = os.getenv("PYTEST_XDIST_WORKER")
-        if not worker_id:
-            with open(
-                f"{PLATFORM}_pytest_worker_{PILLAR}.json", "w", encoding="utf-8"
-            ) as f:
-                json.dump(self.results, f)
-
     def save_to_temp_file(self, worker_id: str) -> None:
         """
         Save worker results to a temporary JSON file.
@@ -232,4 +225,21 @@ class MetricsReport:
             print("\nData pushed successfully to Victoria Metrics\n")
             return response
         else:
+            worker_id = os.getenv("PYTEST_XDIST_WORKER")
+
+            if not worker_id:
+                filename = f"{PLATFORM}_pytest_worker_{PILLAR}.json"
+                filepath = os.path.abspath(filename)
+
+                print(f"Saving file at: {filepath}")
+                print(f"Current working directory: {os.getcwd()}")
+                print(f"Data to write: {self.results}")
+
+                try:
+                    with open(filepath, "w", encoding="utf-8") as f:
+                        json.dump(self.results, f)
+                    print(f"File successfully written at: {filepath}")
+                except Exception as e:
+                    print(f"Error writing file: {e}")
+
             print("Sending Metrics to Victoria is Disabled")
