@@ -172,7 +172,7 @@ class MetricsReport:
         self.results = list(latest_result.values())
 
     def update_list_titles(self, id, title):
-        url = f"https://api.qase.io/v1/case/PEB/{id}"
+        url = f"https://api.qase.io/v1/case/{PROJECT}/{id}"
 
         payload = {"title": title}
         headers = {
