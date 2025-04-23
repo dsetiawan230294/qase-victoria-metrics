@@ -18,6 +18,7 @@ Before running the tests, set up the following environment variables:
 | `QASE_TESTOPS_PROJECT`| Qase project identifier                          | Yes      |
 | `PLATFORM`            | Platform identifier (e.g., OS, environment)      | Yes       |
 | `QASE_TESTOPS_API_TOKEN` | API token for Qase integration               | Yes      |
+| `QASE_ADMIN_TOKEN` | API token for Qase data changes integration               | Yes      |
 | `EXCLUDED_RUN_ID`     | Run ID to exclude from metrics                   | Yes       |
 | `PUSH_TO_VICTORIA`     | Option to Push or Not Push the Result           | Yes       |
 | `MULTIPLE_REPORT`     | Option to generate multiple report for multiple job           | Yes      |

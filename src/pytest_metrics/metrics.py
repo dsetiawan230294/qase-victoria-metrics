@@ -13,6 +13,7 @@ from typing import Dict, Any, List, Optional
 import requests
 from _pytest.reports import TestReport
 from _pytest.nodes import Item
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Environment variables
 VICTORIA_URL: Optional[str] = os.environ.get("VICTORIA_URL")
@@ -20,6 +21,7 @@ RUN_ID: Optional[str] = os.environ.get("QASE_TESTOPS_RUN_ID")
 PROJECT: Optional[str] = os.environ.get("QASE_TESTOPS_PROJECT")
 PLATFORM: Optional[str] = os.environ.get("PLATFORM")
 QASE_TOKEN: Optional[str] = os.environ.get("QASE_TESTOPS_API_TOKEN")
+ADMIN_TOKEN: Optional[str] = os.environ.get("QASE_ADMIN_TOKEN")
 PUSH_TO_VICTORIA: Optional[str] = os.environ.get("PUSH_TO_VICTORIA")
 MULTIPLE_REPORT: Optional[str] = os.environ.get("MULTIPLE_REPORT")
 DELETE_TEMP_FILE: Optional[str] = os.environ.get("DELETE_TEMP_FILE")
@@ -50,6 +52,7 @@ class MetricsReport:
         self.run_id: Optional[str] = run_id
         self.platform: Optional[str] = platform
         self.results: List[Dict[str, Any]] = []
+        self.multiplecase: List[Dict[str, Any]] = []
 
     def collect_result(self, item: Item, report: TestReport) -> None:
         """
@@ -90,6 +93,13 @@ class MetricsReport:
         max_length = max(len(case_id), len(case_title))
 
         for i in range(max_length):
+            self.multiplecase.append(
+                {
+                    "id": (case_id[i] if i < len(case_id) else case_id[-1]),
+                    "title": (case_title[i] if i < len(case_title) else case_title[-1]),
+                }
+            )
+
             self.results.append(
                 {
                     "run_id": self.run_id,
@@ -128,6 +138,11 @@ class MetricsReport:
         """
         Load results from temporary worker files and merge them into `results`.
         """
+        # Save multiple list qase id here
+        mapping_name = "qase_mappings.json"
+        with open(mapping_name, "w", encoding="utf-8") as f:
+            json.dump(self.multiplecase, f)
+
         for file in os.listdir():
             if "pytest_worker_" in file and file.endswith(".json"):
                 with open(file, "r", encoding="utf-8") as f:
@@ -156,6 +171,35 @@ class MetricsReport:
 
         self.results = list(latest_result.values())
 
+    def update_list_titles(self, id, title):
+        url = f"https://api.qase.io/v1/case/PEB/{id}"
+
+        payload = {"title": title}
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "Token": ADMIN_TOKEN,
+        }
+
+        try:
+            requests.patch(url, json=payload, headers=headers, timeout=30)
+
+        except requests.RequestException as e:
+            print(f"[{id}] ERROR: {e}")
+
+    def update_titles_to_qase(self, file_path="qase_mappings.json", max_workers=10):
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [
+                executor.submit(self.update_list_titles, item["id"], item["title"])
+                for item in data
+            ]
+
+            for future in as_completed(futures):
+                future.result()
+
     def send_to_victoria_metrics(self) -> Optional[requests.Response]:
         """
         Sends collected test results to VictoriaMetrics in Prometheus format.
@@ -167,6 +211,9 @@ class MetricsReport:
         if not self.results:
             print("No test results to send.")
             return None
+
+        # Update multiple case title
+        self.update_titles_to_qase()
 
         self.sanitize_result()
 
