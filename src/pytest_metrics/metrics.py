@@ -182,8 +182,8 @@ class MetricsReport:
         }
 
         try:
-            requests.patch(url, json=payload, headers=headers, timeout=30)
-
+            response = requests.patch(url, json=payload, headers=headers, timeout=30)
+            print(f"[{id}] Status: {response.status_code}, Response: {response.text}")
         except requests.RequestException as e:
             print(f"[{id}] ERROR: {e}")
 
@@ -213,6 +213,7 @@ class MetricsReport:
             return None
 
         # Update multiple case title
+        time.sleep(3)
         self.update_titles_to_qase()
 
         self.sanitize_result()
