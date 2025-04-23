@@ -134,6 +134,14 @@ class MetricsReport:
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(self.results, f)
 
+        mapping_name = (
+            f"{PILLAR}_qase_mappings_{worker_id}.json"
+            if MULTIPLE_REPORT in [None, "true"]
+            else f"_qase_mappings_{worker_id}.json"
+        )
+        with open(mapping_name, "w", encoding="utf-8") as f:
+            json.dump(self.multiplecase, f)
+
     def load_and_merge_results(self) -> None:
         """
         Load results from temporary worker files and merge them into `results`.
@@ -151,6 +159,12 @@ class MetricsReport:
                         self.results.extend(worker_data)
                 if DELETE_TEMP_FILE in [None, "true"]:
                     os.remove(file)
+
+            if "_qase_mappings_" in file and file.endswith(".json"):
+                with open(file, "r", encoding="utf-8") as f:
+                    worker_data = json.load(f)
+                    if worker_data:
+                        self.multiplecase.extend(worker_data)
 
     def sanitize_result(self) -> None:
         """
@@ -187,16 +201,12 @@ class MetricsReport:
         except requests.RequestException as e:
             print(f"[{id}] ERROR: {e}")
 
-    def update_titles_to_qase(self, file_path="qase_mappings.json", max_workers=10):
-        with open(file_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
+    def run_parallel_updates(self, multiplecase, max_workers=10):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [
                 executor.submit(self.update_list_titles, item["id"], item["title"])
-                for item in data
+                for item in multiplecase
             ]
-
             for future in as_completed(futures):
                 future.result()
 
@@ -214,7 +224,7 @@ class MetricsReport:
 
         # Update multiple case title
         time.sleep(3)
-        self.update_titles_to_qase()
+        self.run_parallel_updates(self.multiplecase)
 
         self.sanitize_result()
 
