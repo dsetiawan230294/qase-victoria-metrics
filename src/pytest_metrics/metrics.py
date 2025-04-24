@@ -9,6 +9,7 @@ for further analysis in a Prometheus-compatible format.
 import json
 import os
 import time
+import sys
 from typing import Dict, Any, List, Optional
 import requests
 from _pytest.reports import TestReport
@@ -278,6 +279,7 @@ class MetricsReport:
                 response.raise_for_status()
             except requests.exceptions.RequestException as e:
                 print(f"Error sending data to VictoriaMetrics: {e}")
+                sys.exit(1)
                 return None
 
             print("\nData pushed successfully to Victoria Metrics\n")
