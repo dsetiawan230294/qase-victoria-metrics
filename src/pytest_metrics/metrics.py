@@ -55,7 +55,9 @@ class MetricsReport:
         self.results: List[Dict[str, Any]] = []
         self.multiplecase: List[Dict[str, Any]] = []
 
-    def collect_result(self, item: Item, report: TestReport) -> None:
+    def collect_result(
+        self, item: Item, report: TestReport, status: str = None
+    ) -> None:
         """
         Collects test execution results and stores them in `results`.
 
@@ -63,60 +65,68 @@ class MetricsReport:
             item (Item): The pytest test item.
             report (TestReport): The test execution report.
         """
-        if report.when != "call":  # Avoid setup/teardown phases
-            return
+        if report.when == "call" or (report.when == "setup" and report.failed):
 
-        case_id = getattr(item.function, "__custom_id_suite__", None)
-        suite_title = getattr(item.function, "__custom_qase_suite__", None)
-        case_title = getattr(item.function, "__custom_qase_title__", None)
-        tags = getattr(item.function, "__custom_qase_tags__", None)
+            case_id = getattr(item.function, "__custom_id_suite__", None)
+            suite_title = getattr(item.function, "__custom_qase_suite__", None)
+            case_title = getattr(item.function, "__custom_qase_title__", None)
+            tags = getattr(item.function, "__custom_qase_tags__", None)
 
-        # Ensure attributes are always lists
-        if not isinstance(suite_title, list):
-            suite_title = (
-                [suite_title] if suite_title is not None else ["UNKNOWN SUITE TITLE"]
-            )
-        if not isinstance(case_id, list):
-            case_id = [case_id] if case_id is not None else ["UNKNOWN CASE ID"]
-        if not isinstance(case_title, list):
-            case_title = (
-                [case_title] if case_title is not None else ["UNKNOWN TESTCASE TITLE"]
-            )
+            # Ensure attributes are always lists
+            if not isinstance(suite_title, list):
+                suite_title = (
+                    [suite_title]
+                    if suite_title is not None
+                    else ["UNKNOWN SUITE TITLE"]
+                )
+            if not isinstance(case_id, list):
+                case_id = [case_id] if case_id is not None else ["UNKNOWN CASE ID"]
+            if not isinstance(case_title, list):
+                case_title = (
+                    [case_title]
+                    if case_title is not None
+                    else ["UNKNOWN TESTCASE TITLE"]
+                )
 
-        duration = int(report.duration * 1000)
-        error_message = None
-        stacktrace = None
+            duration = int(report.duration * 1000)
+            error_message = None
+            stacktrace = None
 
-        if report.outcome == "failed":
-            error_message = report.longreprtext.split("\n")[-1]
-            stacktrace = report.longreprtext
+            status = status if status else report.outcome
+            if status in ["failed", "error"]:
+                error_message = report.longreprtext.split("\n")[-1]
+                stacktrace = report.longreprtext
 
-        max_length = max(len(case_id), len(case_title))
+            max_length = max(len(case_id), len(case_title))
 
-        for i in range(max_length):
-            self.multiplecase.append(
-                {
-                    "id": (case_id[i] if i < len(case_id) else case_id[-1]),
-                    "title": (case_title[i] if i < len(case_title) else case_title[-1]),
-                }
-            )
+            for i in range(max_length):
+                self.multiplecase.append(
+                    {
+                        "id": (case_id[i] if i < len(case_id) else case_id[-1]),
+                        "title": (
+                            case_title[i] if i < len(case_title) else case_title[-1]
+                        ),
+                    }
+                )
 
-            self.results.append(
-                {
-                    "run_id": self.run_id,
-                    "case_id": (case_id[i] if i < len(case_id) else case_id[-1]),
-                    "title": (case_title[i] if i < len(case_title) else case_title[-1]),
-                    "suite_title": (
-                        suite_title[i] if i < len(suite_title) else suite_title[-1]
-                    ),
-                    "status": report.outcome,
-                    "time_spent_ms": duration,
-                    "error": error_message,
-                    "stacktrace": stacktrace,
-                    "tags": tags,
-                    "platform": self.platform,
-                }
-            )
+                self.results.append(
+                    {
+                        "run_id": self.run_id,
+                        "case_id": (case_id[i] if i < len(case_id) else case_id[-1]),
+                        "title": (
+                            case_title[i] if i < len(case_title) else case_title[-1]
+                        ),
+                        "suite_title": (
+                            suite_title[i] if i < len(suite_title) else suite_title[-1]
+                        ),
+                        "status": status,
+                        "time_spent_ms": duration,
+                        "error": error_message,
+                        "stacktrace": stacktrace,
+                        "tags": tags,
+                        "platform": self.platform,
+                    }
+                )
 
     def save_to_temp_file(self, worker_id: str) -> None:
         """
