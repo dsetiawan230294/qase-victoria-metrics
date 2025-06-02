@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Environment variables
 VICTORIA_URL: Optional[str] = os.environ.get("VICTORIA_URL")
+VICTORIA_URL_1: Optional[str] = os.environ.get("VICTORIA_URL_1")
 RUN_ID: Optional[str] = os.environ.get("QASE_TESTOPS_RUN_ID")
 PROJECT: Optional[str] = os.environ.get("QASE_TESTOPS_PROJECT")
 PLATFORM: Optional[str] = os.environ.get("PLATFORM")
@@ -291,6 +292,21 @@ class MetricsReport:
                 print(f"Error sending data to VictoriaMetrics: {e}")
                 sys.exit(1)
                 return None
+
+            if VICTORIA_URL_1:
+                try:
+                    response_1 = requests.post(
+                        VICTORIA_URL_1,
+                        data=payload,
+                        headers={"Content-Type": "text/plain"},
+                        timeout=300,
+                    )
+                    print("Response 1:", response_1.status_code, response_1.text)
+                    response_1.raise_for_status()
+                except requests.exceptions.RequestException as e:
+                    print(f"Error sending data to VictoriaMetrics URL 1: {e}")
+                    sys.exit(1)
+                    return None
 
             print("\nData pushed successfully to Victoria Metrics\n")
             return response
