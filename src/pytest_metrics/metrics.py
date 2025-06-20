@@ -17,9 +17,6 @@ from _pytest.reports import TestReport
 from _pytest.nodes import Item
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-logger = logging.getLogger(__name__)
-logger.setLevel("INFO")
-
 # Environment variables
 VICTORIA_URL: Optional[str] = os.environ.get("VICTORIA_URL")
 VICTORIA_URL_1: Optional[str] = os.environ.get("VICTORIA_URL_1")
@@ -213,11 +210,8 @@ class MetricsReport:
 
         try:
             response = requests.patch(url, json=payload, headers=headers, timeout=30)
-            logger.debug(
-                "[%s] Status: %s, Response: %s", id, response.status_code, response.text
-            )
         except requests.RequestException as e:
-            logger.error("[%s] ERROR: %s", id, e)
+            print(f"[{id}] ERROR: {e}")
 
     def run_parallel_updates(self, multiplecase, max_workers=10):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -237,7 +231,7 @@ class MetricsReport:
             or None if an error occurred.
         """
         if not self.results:
-            logger.error("No test results to send.")
+            print("No test results to send.")
             return None
 
         # Update multiple case title
@@ -292,10 +286,12 @@ class MetricsReport:
                     headers={"Content-Type": "text/plain"},
                     timeout=300,
                 )
-                logger.info("Response: %s , %s", response.status_code, response.text)
+                print(
+                    f"Response status code: {response.status_code}\n Response text : {response.text}"
+                )
                 response.raise_for_status()
             except requests.exceptions.RequestException as e:
-                logger.error("Error sending data to VictoriaMetrics: %s", e)
+                print(f"Error sending data to VictoriaMetrics: {e}")
                 sys.exit(1)
                 return None
 
@@ -307,16 +303,16 @@ class MetricsReport:
                         headers={"Content-Type": "text/plain"},
                         timeout=300,
                     )
-                    logger.info(
-                        "Response 1: %s , %s", response_1.status_code, response_1.text
+                    print(
+                        f"Response 1 status code: {response_1.status_code}\n Response 1 text : {response_1.text}"
                     )
                     response_1.raise_for_status()
                 except requests.exceptions.RequestException as e:
-                    logger.error("Error sending data to VictoriaMetrics URL 1: %s", e)
+                    print(f"Error sending data to VictoriaMetrics URL 1: {e}")
                     sys.exit(1)
                     return None
 
-            logger.info("\nData pushed successfully to Victoria Metrics\n")
+            print("\nData pushed successfully to Victoria Metrics\n")
             return response
         else:
             worker_id = os.getenv("PYTEST_XDIST_WORKER")
@@ -325,15 +321,13 @@ class MetricsReport:
                 filename = f"{PLATFORM}_pytest_worker_{PILLAR}.json"
                 filepath = os.path.abspath(filename)
 
-                logger.debug("Saving file at: %s", filepath)
-                logger.debug("Current working directory: %s", os.getcwd())
-                logger.debug("Data to write: %s", self.results)
+                print(f"Data to write: {self.results}", self.results)
 
                 try:
                     with open(filepath, "w", encoding="utf-8") as f:
                         json.dump(self.results, f)
-                    logger.info("File successfully written at: %s", filepath)
+                    print(f"File successfully written at: {filepath}")
                 except Exception as e:
-                    logger.error("Error writing file: %s", e)
+                    print(f"Error writing file: {e}")
 
-            logger.info("Sending Metrics to Victoria is Disabled")
+            print("Sending Metrics to Victoria is Disabled")
