@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="qase-victoria-metrics",
-    version="1.1.8",
+    version="1.1.9",
     description="A Qase-Pytest plugin to extract test results and push metrics to Victoria Metrics",
     long_description=long_description,
     long_description_content_type="text/markdown",

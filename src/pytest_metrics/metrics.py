@@ -11,10 +11,14 @@ import os
 import time
 import sys
 from typing import Dict, Any, List, Optional
+import logging
 import requests
 from _pytest.reports import TestReport
 from _pytest.nodes import Item
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+logger = logging.getLogger(__name__)
+logger.setLevel("INFO")
 
 # Environment variables
 VICTORIA_URL: Optional[str] = os.environ.get("VICTORIA_URL")
@@ -209,9 +213,11 @@ class MetricsReport:
 
         try:
             response = requests.patch(url, json=payload, headers=headers, timeout=30)
-            print(f"[{id}] Status: {response.status_code}, Response: {response.text}")
+            logger.debug(
+                "[%s] Status: %s, Response: %s", id, response.status_code, response.text
+            )
         except requests.RequestException as e:
-            print(f"[{id}] ERROR: {e}")
+            logger.error("[%s] ERROR: %s", id, e)
 
     def run_parallel_updates(self, multiplecase, max_workers=10):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -231,7 +237,7 @@ class MetricsReport:
             or None if an error occurred.
         """
         if not self.results:
-            print("No test results to send.")
+            logger.error("No test results to send.")
             return None
 
         # Update multiple case title
@@ -286,10 +292,10 @@ class MetricsReport:
                     headers={"Content-Type": "text/plain"},
                     timeout=300,
                 )
-                print("Response:", response.status_code, response.text)
+                logger.info("Response: %s , %s", response.status_code, response.text)
                 response.raise_for_status()
             except requests.exceptions.RequestException as e:
-                print(f"Error sending data to VictoriaMetrics: {e}")
+                logger.error("Error sending data to VictoriaMetrics: %s", e)
                 sys.exit(1)
                 return None
 
@@ -301,14 +307,16 @@ class MetricsReport:
                         headers={"Content-Type": "text/plain"},
                         timeout=300,
                     )
-                    print("Response 1:", response_1.status_code, response_1.text)
+                    logger.info(
+                        "Response 1: %s , %s", response_1.status_code, response_1.text
+                    )
                     response_1.raise_for_status()
                 except requests.exceptions.RequestException as e:
-                    print(f"Error sending data to VictoriaMetrics URL 1: {e}")
+                    logger.error("Error sending data to VictoriaMetrics URL 1: %s", e)
                     sys.exit(1)
                     return None
 
-            print("\nData pushed successfully to Victoria Metrics\n")
+            logger.info("\nData pushed successfully to Victoria Metrics\n")
             return response
         else:
             worker_id = os.getenv("PYTEST_XDIST_WORKER")
@@ -317,15 +325,15 @@ class MetricsReport:
                 filename = f"{PLATFORM}_pytest_worker_{PILLAR}.json"
                 filepath = os.path.abspath(filename)
 
-                print(f"Saving file at: {filepath}")
-                print(f"Current working directory: {os.getcwd()}")
-                print(f"Data to write: {self.results}")
+                logger.debug("Saving file at: %s", filepath)
+                logger.debug("Current working directory: %s", os.getcwd())
+                logger.debug("Data to write: %s", self.results)
 
                 try:
                     with open(filepath, "w", encoding="utf-8") as f:
                         json.dump(self.results, f)
-                    print(f"File successfully written at: {filepath}")
+                    logger.info("File successfully written at: %s", filepath)
                 except Exception as e:
-                    print(f"Error writing file: {e}")
+                    logger.error("Error writing file: %s", e)
 
-            print("Sending Metrics to Victoria is Disabled")
+            logger.info("Sending Metrics to Victoria is Disabled")
