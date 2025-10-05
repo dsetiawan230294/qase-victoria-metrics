@@ -28,7 +28,6 @@ ADMIN_TOKEN: Optional[str] = os.environ.get("QASE_ADMIN_TOKEN")
 PUSH_TO_VICTORIA: Optional[str] = os.environ.get("PUSH_TO_VICTORIA")
 MULTIPLE_REPORT: Optional[str] = os.environ.get("MULTIPLE_REPORT")
 DELETE_TEMP_FILE: Optional[str] = os.environ.get("DELETE_TEMP_FILE")
-X_API_KEY: Optional[str] = os.environ.get("X_API_KEY")
 PILLAR: Optional[str] = os.environ.get("PILLAR")
 
 
@@ -287,15 +286,21 @@ class MetricsReport:
 
         # Create payload for VICTORIA_URL_1 (using full stacktrace)
         payload_1 = None
-        if VICTORIA_URL_1:
+        VICTORIA_URL = "EXISTS"
+        if VICTORIA_URL:
             metrics_secondary: List[str] = []
             for result in self.results:
                 status_value = "0" if result["status"] == "failed" else "1"
-                error_message = (
-                    result["stacktrace"].replace('"', '\\"').replace("\n", "\\n")
-                    if result["stacktrace"]
-                    else "None"
-                )
+                if result["stacktrace"]:
+                    # Convert stacktrace to one line for Prometheus format
+                    error_message = (
+                        result["stacktrace"]
+                        .replace('"', '\\"')
+                        .replace("\n", "\\n")
+                        .replace("\r", "\\r")
+                    )
+                else:
+                    error_message = "None"
                 labels = format_labels(result)
 
                 metrics_secondary.append(
@@ -312,6 +317,7 @@ class MetricsReport:
                     )
 
             payload_1 = "\n".join(metrics_secondary)
+            print(f"Payload 1:\n{payload_1}\n")
 
         if PUSH_TO_VICTORIA == "true":
             try:
@@ -335,7 +341,7 @@ class MetricsReport:
                     response_1 = requests.post(
                         VICTORIA_URL_1,
                         data=payload_1,
-                        headers={"Content-Type": "text/plain", "X-API-KEY": X_API_KEY},
+                        headers={"Content-Type": "text/plain"},
                         timeout=300,
                     )
                     print(
