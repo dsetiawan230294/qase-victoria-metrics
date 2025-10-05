@@ -28,6 +28,7 @@ ADMIN_TOKEN: Optional[str] = os.environ.get("QASE_ADMIN_TOKEN")
 PUSH_TO_VICTORIA: Optional[str] = os.environ.get("PUSH_TO_VICTORIA")
 MULTIPLE_REPORT: Optional[str] = os.environ.get("MULTIPLE_REPORT")
 DELETE_TEMP_FILE: Optional[str] = os.environ.get("DELETE_TEMP_FILE")
+X_API_KEY: Optional[str] = os.environ.get("X_API_KEY")
 PILLAR: Optional[str] = os.environ.get("PILLAR")
 
 
@@ -262,21 +263,55 @@ class MetricsReport:
                 f'platform="{result["platform"]}", case_id="{result["case_id"]}"'
             )
 
+        # Create payload for VICTORIA_URL (using short error)
+        metrics_primary: List[str] = []
         for result in self.results:
             status_value = "0" if result["status"] == "failed" else "1"
             error_message = result["error"] if result["error"] else "None"
             labels = format_labels(result)
 
-            metrics.append(
+            metrics_primary.append(
                 f'test_case_duration_ms{{{labels}}} {result["time_spent_ms"]} {timestamp}'
             )
-            metrics.append(f"test_case_status{{{labels}}} {status_value} {timestamp}")
+            metrics_primary.append(
+                f"test_case_status{{{labels}}} {status_value} {timestamp}"
+            )
 
             if result["status"] == "failed":
                 failure_labels = f'{labels}, error_message="{error_message}"'
-                metrics.append(f"test_case_failures{{{failure_labels}}} 1 {timestamp}")
+                metrics_primary.append(
+                    f"test_case_failures{{{failure_labels}}} 1 {timestamp}"
+                )
 
-        payload = "\n".join(metrics)
+        payload = "\n".join(metrics_primary)
+
+        # Create payload for VICTORIA_URL_1 (using full stacktrace)
+        payload_1 = None
+        if VICTORIA_URL_1:
+            metrics_secondary: List[str] = []
+            for result in self.results:
+                status_value = "0" if result["status"] == "failed" else "1"
+                error_message = (
+                    result["stacktrace"].replace('"', '\\"').replace("\n", "\\n")
+                    if result["stacktrace"]
+                    else "None"
+                )
+                labels = format_labels(result)
+
+                metrics_secondary.append(
+                    f'test_case_duration_ms{{{labels}}} {result["time_spent_ms"]} {timestamp}'
+                )
+                metrics_secondary.append(
+                    f"test_case_status{{{labels}}} {status_value} {timestamp}"
+                )
+
+                if result["status"] == "failed":
+                    failure_labels = f'{labels}, error_message="{error_message}"'
+                    metrics_secondary.append(
+                        f"test_case_failures{{{failure_labels}}} 1 {timestamp}"
+                    )
+
+            payload_1 = "\n".join(metrics_secondary)
 
         if PUSH_TO_VICTORIA == "true":
             try:
@@ -295,12 +330,12 @@ class MetricsReport:
                 sys.exit(1)
                 return None
 
-            if VICTORIA_URL_1:
+            if VICTORIA_URL_1 and payload_1:
                 try:
                     response_1 = requests.post(
                         VICTORIA_URL_1,
-                        data=payload,
-                        headers={"Content-Type": "text/plain"},
+                        data=payload_1,
+                        headers={"Content-Type": "text/plain", "X-API-KEY": X_API_KEY},
                         timeout=300,
                     )
                     print(
