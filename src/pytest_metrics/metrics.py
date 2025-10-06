@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # Environment variables
 VICTORIA_URL: Optional[str] = os.environ.get("VICTORIA_URL")
 VICTORIA_URL_1: Optional[str] = os.environ.get("VICTORIA_URL_1")
+X_API_KEY: Optional[str] = os.environ.get("X_API_KEY")
 RUN_ID: Optional[str] = os.environ.get("QASE_TESTOPS_RUN_ID")
 PROJECT: Optional[str] = os.environ.get("QASE_TESTOPS_PROJECT")
 PLATFORM: Optional[str] = os.environ.get("PLATFORM")
@@ -309,7 +310,7 @@ class MetricsReport:
                     f"test_case_status{{{labels}}} {status_value} {timestamp}"
                 )
 
-                if result["status"] == "failed":
+                if result["status"] in ("failed", "error"):
                     failure_labels = f'{labels}, error_message="{error_message}"'
                     metrics_secondary.append(
                         f"test_case_failures{{{failure_labels}}} 1 {timestamp}"
@@ -340,7 +341,7 @@ class MetricsReport:
                     response_1 = requests.post(
                         VICTORIA_URL_1,
                         data=payload_1,
-                        headers={"Content-Type": "text/plain"},
+                        headers={"Content-Type": "text/plain", "X-API-KEY": X_API_KEY},
                         timeout=300,
                     )
                     print(
