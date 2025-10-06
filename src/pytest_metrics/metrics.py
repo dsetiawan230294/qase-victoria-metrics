@@ -286,7 +286,6 @@ class MetricsReport:
 
         # Create payload for VICTORIA_URL_1 (using full stacktrace)
         payload_1 = None
-        VICTORIA_URL = "EXISTS"
         if VICTORIA_URL:
             metrics_secondary: List[str] = []
             for result in self.results:
