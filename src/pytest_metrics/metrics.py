@@ -223,6 +223,35 @@ class MetricsReport:
             for future in as_completed(futures):
                 future.result()
 
+    def sanitize_error_message(self, error_message: str) -> str:
+        """
+        Properly escape error message for Prometheus format without truncation.
+
+        Args:
+            error_message (str): The original error message
+
+        Returns:
+            str: The properly escaped error message
+        """
+        if not error_message:
+            return "None"
+
+        # More comprehensive escaping for Prometheus label values
+        # Order matters - escape backslashes first to avoid double-escaping
+        escaped = (
+            str(error_message)  # Ensure it's a string
+            .replace("\\", "\\\\")  # Escape backslashes first
+            .replace('"', '\\"')  # Escape quotes
+            .replace("\n", "\\n")  # Escape newlines
+            .replace("\r", "\\r")  # Escape carriage returns
+            .replace("\t", "\\t")  # Escape tabs
+            .replace("\b", "\\b")  # Escape backspace
+            .replace("\f", "\\f")  # Escape form feed
+            .replace("\v", "\\v")  # Escape vertical tab
+        )
+
+        return escaped
+
     def send_to_victoria_metrics(self) -> Optional[requests.Response]:
         """
         Sends collected test results to VictoriaMetrics in Prometheus format.
@@ -267,7 +296,7 @@ class MetricsReport:
         metrics_primary: List[str] = []
         for result in self.results:
             status_value = "0" if result["status"] == "failed" else "1"
-            error_message = result["error"] if result["error"] else "None"
+            error_message = self.sanitize_error_message(result["error"])
             labels = format_labels(result)
 
             metrics_primary.append(
@@ -291,16 +320,8 @@ class MetricsReport:
             metrics_secondary: List[str] = []
             for result in self.results:
                 status_value = "0" if result["status"] == "failed" else "1"
-                if result["stacktrace"]:
-                    # Convert stacktrace to one line for Prometheus format
-                    error_message = (
-                        result["stacktrace"]
-                        .replace('"', '\\"')
-                        .replace("\n", "\\n")
-                        .replace("\r", "\\r")
-                    )
-                else:
-                    error_message = "None"
+                # Use the sanitize_error_message method for proper escaping
+                error_message = self.sanitize_error_message(result["stacktrace"])
                 labels = format_labels(result)
 
                 metrics_secondary.append(
@@ -317,6 +338,18 @@ class MetricsReport:
                     )
 
             payload_1 = "\n".join(metrics_secondary)
+
+            # Debug logging for error message lengths
+            print(
+                f"Debug: Generated {len(metrics_secondary)} metrics for VICTORIA_URL_1"
+            )
+            for i, metric in enumerate(metrics_secondary):
+                if "test_case_failures" in metric and len(metric) > 1000:
+                    print(f"Debug: Long metric line {i+1}: {len(metric)} characters")
+                    # Log first and last 100 chars to verify no truncation
+                    print(f"Debug: Start: {metric[:100]}...")
+                    print(f"Debug: End: ...{metric[-100:]}")
+
             print(f"Payload 1:\n{payload_1}\n")
 
         if PUSH_TO_VICTORIA == "true":
