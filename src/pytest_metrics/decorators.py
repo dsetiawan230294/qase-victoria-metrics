@@ -9,7 +9,12 @@ ignoring tests based on environment variables.
 import os
 from typing import Callable, Union, List, Set
 import allure
-from qase.pytest import qase
+
+try:
+    # Prefer the famacase-pytest drop-in when installed.
+    from famacase.pytest import qase  # type: ignore
+except ImportError:  # pragma: no cover
+    from qase.pytest import qase
 
 # ENVIRONMENT VARIABLES
 EXCLUDED_RUN_ID = os.environ.get("EXCLUDED_RUN_ID")
