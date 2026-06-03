@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qase-victoria-metrics"
-version = "1.2.6"
+version = "1.2.7"
 description = "A Qase-Pytest plugin to extract test results and push metrics to Victoria Metrics"
 readme = "README.md"
 authors = [
@@ -20,10 +20,14 @@ classifiers = [
 ]
 dependencies = [
     "pytest>=8.3.5",
-    "qase-pytest>=6.2.0",
     "allure-pytest>=2.13.5"
 ]
 requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = [
+    "qase-pytest>=6.2.0",
+]
 
 [project.entry-points.pytest11]
 pytest_metrics = "pytest_metrics.metrics"
